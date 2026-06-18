@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDP Restructure Prototype</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f1724;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px;
+      font-family: 'Lato', sans-serif;
+    }
+
+    /* Design tokens */
+    :root {
+      --bg: #ffffff;
+      --surface-2: #f4f6f6;
+      --surface-info: #e1f2fa;
+      --text-1: #06090d;
+      --text-2: #171f2c;
+      --text-3: #445b70;
+      --text-subdued: #a9bcc7;
+      --text-inv: #ffffff;
+      --blue: #3a83f9;
+      --blue-sel: #e1f2fa;
+      --red: #f65858;
+      --green: #2f9d5b;
+      --border-2: #e3e8ea;
+      --border-1: #f4f6f6;
+    }
+
+    /* Phone shell */
+    .phone {
+      width: 360px;
+      height: 780px;
+      background: var(--bg);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Status bar */
+    .status-bar {
+      height: 28px;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px 0 16px;
+      flex-shrink: 0;
+    }
+    .status-time { font-size: 12px; font-weight: 700; color: var(--text-1); }
+    .status-icons { display: flex; align-items: center; gap: 5px; }
+
+    /* Nav bar */
+    .nav-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .nav-btn { width: 40px; height: 40px; border: none; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px; }
+
+    /* Scrollable area */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+    .scroll-area::-webkit-scrollbar { display: none; }
+
+    /* ── Header ── */
+    .header { padding: 8px 16px 4px; background: var(--bg); }
+    .price-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .coin-id { display: flex; align-items: center; gap: 8px; }
+    .coin-logo { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+    .coin-ticker { font-size: 20px; font-weight: 700; color: var(--text-1); line-height: 26px; }
+    .coin-subname { font-size: 12px; color: var(--text-3); line-height: 18px; }
+    .price-val { font-size: 20px; font-weight: 700; color: var(--text-1); line-height: 26px; text-align: right; }
+    .price-up { font-size: 12px; color: var(--green); text-align: right; }
+
+    .futures-banner {
+      background: var(--surface-info);
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .futures-pair { font-size: 12px; font-weight: 700; color: var(--text-1); }
+    .futures-perp { font-size: 10px; color: var(--text-subdued); }
+    .futures-lev { background: var(--surface-2); border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 700; color: var(--text-2); margin-left: 4px; }
+
+    .stats-bar {
+      background: var(--surface-2);
+      border-radius: 8px;
+      height: 32px;
+      padding: 4px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stat { display: flex; gap: 6px; font-size: 10px; }
+    .stat-l { color: var(--text-3); font-weight: 400; }
+    .stat-v { color: var(--text-3); font-weight: 700; }
+
+    /* ── Chart ── */
+    .chart-wrap { background: var(--bg); }
+    .tf-row {
+      padding: 8px;
+    }
+    .tf-inner {
+      background: var(--bg);
+      border: 1px solid var(--border-2);
+      border-radius: 8px;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tf-pills { display: flex; gap: 2px; flex: 1; }
+    .tf-pill {
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-3);
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .tf-pill.on { background: var(--blue-sel); border-color: var(--blue); color: var(--text-1); }
+    .chart-type-sw {
+      background: var(--surface-2);
+      border-radius: 20px;
+      padding: 2px;
+      display: flex;
+    }
+    .ct-btn { width: 22px; height: 22px; border-radius: 20px; border: none; display: flex; align-items: center; justify-content: center; background: none; cursor: pointer; }
+    .ct-btn.on { background: #165bcc; }
+    .sep-v { width: 1px; height: 20px; background: var(--border-2); flex-shrink: 0; }
+    .depth-btn { padding: 4px 8px; font-size: 10px; font-weight: 700; color: var(--text-3); cursor: pointer; }
+
+    .chart-svg-wrap { height: 168px; position: relative; overflow: hidden; }
+    .chart-svg-wrap svg { width: 100%; height: 100%; }
+
+    .indicators-row {
+      background: var(--bg);
+      border-top: 1px solid var(--border-2);
+      border-bottom: 1px solid var(--border-2);
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+    }
+    .indicators-row::-webkit-scrollbar { display: none; }
+    .ind-group { display: flex; gap: 4px; flex-shrink: 0; }
+    .ind-pill {
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-3);
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .ind-pill.on { background: var(--blue-sel); border-color: var(--blue); color: var(--text-1); }
+    .ind-settings {
+      background: var(--surface-info);
+      border-radius: 4px;
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      margin-left: auto; flex-shrink: 0; cursor: pointer;
+    }
+
+    /* ── Tab strip ── */
+    .tab-strip {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border-2);
+      display: flex;
+      padding: 0 16px;
+      gap: 16px;
+      overflow-x: auto;
+    }
+    .tab-strip::-webkit-scrollbar { display: none; }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      height: 40px;
+      align-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .tab-lbl {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-3);
+      white-space: nowrap;
+      transition: color .15s;
+    }
+    .tab-item.on .tab-lbl { color: var(--blue); }
+    .tab-bar { height: 4px; width: 100%; border-radius: 4px 4px 0 0; background: transparent; transition: background .15s; }
+    .tab-item.on .tab-bar { background: var(--blue); }
+
+    /* ── Tab content ── */
+    .tab-pane { display: none; padding: 16px; }
+    .tab-pane.on { display: block; }
+
+    /* ── Shared components ── */
+    .sec-head { font-size: 14px; font-weight: 800; color: var(--text-1); margin-bottom: 8px; }
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border-2);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .card-r8 { border-radius: 8px; }
+    .row-space { display: flex; justify-content: space-between; align-items: center; }
+    .meta-l { font-size: 10px; color: var(--text-3); font-weight: 400; }
+    .meta-v { font-size: 10px; color: var(--text-1); font-weight: 700; }
+    .meta-g { color: var(--green); }
+    .teaser-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .teaser-hd .sec-head { margin-bottom: 0; }
+    .lnk-btn { font-size: 12px; font-weight: 700; color: var(--blue); border: none; background: none; cursor: pointer; }
+    .see-more { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--blue); padding: 8px 0 2px; width: 100%; border: none; background: none; cursor: pointer; }
+
+    /* ── Ringkasan ── */
+    .port-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 8px 0 4px; }
+    .port-cell { display: flex; gap: 4px; align-items: center; }
+    .port-cell.r { justify-content: flex-end; }
+    .action-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .act-btn {
+      flex: 1; height: 32px;
+      border: 1.5px solid var(--blue);
+      background: var(--bg);
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 13px; font-weight: 700; color: var(--blue); cursor: pointer;
+    }
+    .ob-ratio { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .ob-lbl-g { font-size: 13px; font-weight: 700; color: var(--green); white-space: nowrap; }
+    .ob-lbl-r { font-size: 13px; font-weight: 700; color: var(--red); white-space: nowrap; }
+    .ob-bar { flex: 1; height: 8px; border-radius: 4px; overflow: hidden; display: flex; gap: 2px; }
+    .ob-buy { height: 8px; background: var(--green); border-radius: 4px 0 0 4px; }
+    .ob-sell { flex: 1; height: 8px; background: var(--red); border-radius: 0 4px 4px 0; }
+    .ob-table { width: 100%; border-collapse: collapse; }
+    .ob-table th { font-size: 13px; font-weight: 700; color: var(--text-3); padding: 3px 4px; border-bottom: 1px solid var(--border-1); }
+    .ob-table td { font-size: 11px; padding: 3px 4px; }
+    .td-qty { color: var(--text-2); font-weight: 400; }
+    .td-b { color: var(--green); font-weight: 700; text-align: right; }
+    .td-a { color: var(--red); font-weight: 700; }
+    .td-aq { color: var(--text-2); font-weight: 400; text-align: right; }
+
+    /* Analysis teaser */
+    .analysis-summary { display: flex; align-items: center; gap: 12px; padding: 4px 0 8px; }
+    .sig-badge { padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+    .sig-buy { background: #e6f7ee; color: var(--green); }
+    .sig-sell { background: #fee8e8; color: var(--red); }
+    .sig-neu { background: var(--surface-2); color: var(--text-3); }
+    .ind-chips { display: flex; gap: 8px; }
+    .ind-chip {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex; flex-direction: column; gap: 2px; flex: 1;
+    }
+    .ic-name { font-size: 10px; color: var(--text-3); font-weight: 400; }
+    .ic-val { font-size: 12px; font-weight: 700; color: var(--text-1); }
+    .ic-sig { font-size: 10px; font-weight: 700; }
+
+    /* Sentiment teaser */
+    .sent-row { display: flex; align-items: center; gap: 16px; }
+    .sent-circle {
+      width: 58px; height: 58px; border-radius: 50%;
+      border: 3px solid var(--green);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .sent-num { font-size: 20px; font-weight: 700; color: var(--green); line-height: 1; }
+    .sent-lbl { font-size: 8px; color: var(--text-3); }
+    .sent-detail { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .sent-line { display: flex; justify-content: space-between; align-items: center; }
+    .sent-line-l { font-size: 12px; color: var(--text-3); }
+    .sent-line-v { font-size: 12px; font-weight: 700; color: var(--text-1); }
+    .rank-badge { background: #e6f7ee; color: var(--green); padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+
+    /* News */
+    .news-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-1); }
+    .news-item:first-child { padding-top: 0; }
+    .news-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .news-thumb {
+      width: 60px; height: 46px; border-radius: 6px;
+      background: var(--surface-2); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .news-hl { font-size: 12px; font-weight: 700; color: var(--text-1); line-height: 17px; margin-bottom: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .news-meta { font-size: 10px; color: var(--text-3); }
+
+    /* Feed */
+    .feed-post { padding: 10px 0; border-bottom: 1px solid var(--border-1); }
+    .feed-post:first-child { padding-top: 0; }
+    .feed-post:last-child { border-bottom: none; padding-bottom: 0; }
+    .feed-user { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .feed-av { width: 28px; height: 28px; border-radius: 50%; background: var(--blue-sel); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--blue); flex-shrink: 0; }
+    .feed-name { font-size: 12px; font-weight: 700; color: var(--text-1); }
+    .feed-time { font-size: 10px; color: var(--text-3); margin-left: auto; }
+    .feed-text { font-size: 12px; color: var(--text-2); line-height: 18px; }
+    .feed-tags { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 5px; }
+    .feed-tag { background: var(--blue-sel); color: var(--blue); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+
+    /* Token Info */
+    .seg-ctrl { display: flex; background: var(--surface-2); border-radius: 8px; padding: 3px; margin-bottom: 16px; }
+    .seg-btn {
+      flex: 1; height: 30px; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: var(--text-3); border-radius: 6px;
+      cursor: pointer; border: none; background: none; transition: all .15s;
+    }
+    .seg-btn.on { background: var(--bg); color: var(--text-1); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .token-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-1); font-size: 13px; }
+    .token-row:last-child { border-bottom: none; }
+    .token-row-l { color: var(--text-3); font-weight: 400; }
+    .token-row-v { color: var(--text-1); font-weight: 700; text-align: right; max-width: 60%; }
+    .desc-text { font-size: 12px; color: var(--text-2); line-height: 18px; }
+    .comm-links { display: flex; flex-wrap: wrap; gap: 8px; }
+    .comm-lnk {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--surface-2); border-radius: 6px; padding: 6px 10px;
+      font-size: 12px; font-weight: 700; color: var(--blue); cursor: pointer;
+    }
+
+    /* Tokenomics */
+    .alloc-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .alloc-item { display: flex; align-items: center; gap: 5px; }
+    .alloc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .alloc-name { font-size: 10px; color: var(--text-2); }
+    .alloc-pct { font-size: 10px; font-weight: 700; color: var(--text-1); }
+    .unlock-card { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .unlock-header { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .unlock-name { font-size: 12px; font-weight: 700; color: var(--text-1); }
+    .unlock-date { font-size: 10px; color: var(--text-3); }
+    .unlock-amount { font-size: 16px; font-weight: 700; color: var(--blue); margin-bottom: 5px; }
+    .unlock-pct { font-size: 10px; color: var(--text-3); font-weight: 400; }
+    .prog-bar { height: 6px; background: var(--border-2); border-radius: 3px; margin: 5px 0; }
+    .prog-fill { height: 6px; border-radius: 3px; background: var(--blue); }
+
+    /* Teknikal full */
+    .analysis-block {
+      background: var(--bg); border: 1px solid var(--border-2);
+      border-radius: 12px; padding: 16px 12px;
+      text-align: center; margin-bottom: 12px;
+    }
+    .analysis-label { font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
+    .big-badge { display: inline-flex; padding: 7px 24px; border-radius: 24px; font-size: 18px; font-weight: 700; }
+    .analysis-sub { font-size: 10px; color: var(--text-3); margin-top: 8px; }
+    .ind-full-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border-1); }
+    .ind-full-row:last-child { border-bottom: none; }
+    .ind-full-name { font-size: 12px; color: var(--text-3); }
+    .ind-full-right { display: flex; align-items: center; gap: 8px; }
+    .ind-full-val { font-size: 12px; font-weight: 700; color: var(--text-1); }
+    .ind-sig { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+
+    /* Sentiment full */
+    .sent-score-big {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 16px 0 20px;
+    }
+    .sent-sub { font-size: 11px; color: var(--text-3); margin-top: 6px; }
+    .social-rank-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .rank-card { flex: 1; background: var(--surface-2); border-radius: 8px; padding: 10px; }
+    .rank-card-l { font-size: 10px; color: var(--text-3); margin-bottom: 3px; }
+    .rank-card-v { font-size: 20px; font-weight: 700; color: var(--text-1); line-height: 1.2; }
+    .rank-card-sub { font-size: 10px; color: var(--text-3); }
+    .social-stat { display: flex; justify-content: space-between; background: var(--surface-2); border-radius: 8px; padding: 11px 12px; margin-bottom: 8px; }
+    .social-stat-l { font-size: 12px; color: var(--text-3); }
+    .social-stat-v { font-size: 13px; font-weight: 700; color: var(--text-1); }
+
+    /* Bottom bar */
+    .bottom-bar {
+      background: var(--bg);
+      box-shadow: 0 -2px 8px -2px rgba(96,122,141,0.15);
+      height: 80px;
+      display: flex; align-items: center;
+      padding: 16px 16px 16px 0;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .bot-icons { display: flex; flex-shrink: 0; }
+    .bot-icon { width: 56px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-left: 8px; }
+    .bot-icon-l { font-size: 11px; color: var(--text-3); }
+    .bot-main { display: flex; gap: 8px; flex: 1; }
+    .btn-jual { flex: 1; height: 48px; background: var(--red); border: none; border-radius: 4px; font-size: 18px; font-weight: 700; color: white; cursor: pointer; }
+    .btn-beli { flex: 1; height: 48px; background: var(--blue); border: none; border-radius: 4px; font-size: 18px; font-weight: 700; color: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="status-time">12:30</span>
+    <div class="status-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="4" width="3" height="8" fill="#06090d" rx="0.8"/><rect x="4.5" y="2.5" width="3" height="9.5" fill="#06090d" rx="0.8"/><rect x="9" y="0" width="3" height="12" fill="#06090d" rx="0.8"/><rect x="13.5" y="0" width="3" height="12" fill="#06090d" opacity="0.25" rx="0.8"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 3C9.9 3 11.6 3.8 12.8 5.1L14.2 3.5C12.6 1.8 10.4.8 8 .8S3.4 1.8 1.8 3.5L3.2 5.1C4.4 3.8 6.1 3 8 3z" fill="#06090d"/><path d="M8 5.8c1.2 0 2.3.5 3.1 1.3l1.4-1.5C11.2 4.5 9.7 3.8 8 3.8S4.8 4.5 3.5 5.6L4.9 7.1C5.7 6.3 6.8 5.8 8 5.8z" fill="#06090d"/><circle cx="8" cy="10.5" r="1.5" fill="#06090d"/></svg>
+      <svg width="24" height="12" viewBox="0 0 24 12"><rect x="0" y="1.5" width="21" height="9" rx="2" stroke="#06090d" stroke-width="1.2" fill="none"/><rect x="1.5" y="3" width="16" height="6" rx="1" fill="#06090d"/><rect x="21.5" y="4" width="2" height="4" rx="1" fill="#06090d" opacity="0.4"/></svg>
+    </div>
+  </div>
+
+  <!-- Nav bar -->
+  <div class="nav-bar">
+    <button class="nav-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06090d" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div style="flex:1"></div>
+    <button class="nav-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06090d" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    </button>
+    <button class="nav-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#3a83f9"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    </button>
+  </div>
+
+  <!-- Scrollable body -->
+  <div class="scroll-area" id="scrollArea">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="price-row">
+        <div class="coin-id">
+          <div class="coin-logo">
+            <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#627EEA"/><path d="M16.498 4v8.87l7.497 3.35z" fill="#fff" opacity=".6"/><path d="M16.498 4L9 16.22l7.498-3.35z" fill="#fff"/><path d="M16.498 21.968v6.027L24 17.616z" fill="#fff" opacity=".6"/><path d="M16.498 27.995v-6.028L9 17.616z" fill="#fff"/><path d="M16.498 20.573l7.497-4.353-7.497-3.348z" fill="#fff" opacity=".2"/><path d="M9 16.22l7.498 4.353v-7.701z" fill="#fff" opacity=".6"/></svg>
+          </div>
+          <div>
+            <div class="coin-ticker">ETH/IDR</div>
+            <div class="coin-subname">Ethereum</div>
+          </div>
+        </div>
+        <div>
+          <div class="price-val">30.134.787</div>
+          <div class="price-up">▲ 200.000 (+2,56%)</div>
+        </div>
+      </div>
+
+      <div class="futures-banner">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="futures-pair">ADAUSDT</span>
+          <span class="futures-perp">-PERP</span>
+          <span class="futures-lev">25x</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#445b70" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+
+      <div class="stats-bar">
+        <div style="display:flex;gap:24px">
+          <div class="stat"><span class="stat-l">High 24h</span><span class="stat-v">40.758.346</span></div>
+          <div class="stat"><span class="stat-l">Low 24h</span><span class="stat-v">40.758.346</span></div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#445b70" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-wrap">
+      <div class="tf-row">
+        <div class="tf-inner">
+          <div class="tf-pills">
+            <div class="tf-pill on">1m</div>
+            <div class="tf-pill">15m</div>
+            <div class="tf-pill">1h</div>
+            <div class="tf-pill">1D</div>
+            <div class="tf-pill" style="display:flex;align-items:center;gap:2px">Lainnya <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#445b70" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+          </div>
+          <div class="chart-type-sw">
+            <button class="ct-btn on">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="3" width="1.5" height="7" fill="white" rx="0.5"/><rect x="5.25" y="1" width="1.5" height="9" fill="white" rx="0.5"/><rect x="9.5" y="5" width="1.5" height="5" fill="white" rx="0.5"/><line x1="1" y1="5.5" x2="2.5" y2="5.5" stroke="white" stroke-width="1"/><line x1="9.5" y1="7.5" x2="11" y2="7.5" stroke="white" stroke-width="1"/><line x1="5.25" y1="3" x2="6.75" y2="3" stroke="white" stroke-width="1"/></svg>
+            </button>
+            <button class="ct-btn">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#445b70" stroke-width="1.5" stroke-linecap="round"><polyline points="1,9 3.5,5.5 6,7 10,2"/></svg>
+            </button>
+          </div>
+          <div class="sep-v"></div>
+          <div class="depth-btn">Depth</div>
+        </div>
+      </div>
+
+      <div class="chart-svg-wrap">
+        <svg viewBox="0 0 328 155" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Y grid lines -->
+          <line x1="0" y1="18" x2="248" y2="18" stroke="#e3e8ea" stroke-width="0.5"/>
+          <line x1="0" y1="46" x2="248" y2="46" stroke="#e3e8ea" stroke-width="0.5"/>
+          <line x1="0" y1="74" x2="248" y2="74" stroke="#e3e8ea" stroke-width="0.5"/>
+          <line x1="0" y1="102" x2="248" y2="102" stroke="#e3e8ea" stroke-width="0.5"/>
+          <line x1="0" y1="130" x2="248" y2="130" stroke="#e3e8ea" stroke-width="0.5"/>
+          <!-- Price labels -->
+          <text x="252" y="22" font-size="7.5" fill="#445b70" font-family="Lato">1.650.000.000</text>
+          <text x="252" y="50" font-size="7.5" fill="#445b70" font-family="Lato">1.600.000.000</text>
+          <text x="252" y="78" font-size="7.5" fill="#445b70" font-family="Lato">1.550.000.000</text>
+          <text x="252" y="106" font-size="7.5" fill="#445b70" font-family="Lato">1.500.000.000</text>
+          <text x="252" y="134" font-size="7.5" fill="#445b70" font-family="Lato">1.450.000.000</text>
+          <!-- Candles -->
+          <line x1="9" y1="64" x2="9" y2="28" stroke="#2f9d5b" stroke-width="1"/><rect x="6.5" y="44" width="5" height="18" fill="#2f9d5b" rx="0.5"/>
+          <line x1="19" y1="82" x2="19" y2="36" stroke="#2f9d5b" stroke-width="1"/><rect x="16.5" y="54" width="5" height="24" fill="#2f9d5b" rx="0.5"/>
+          <line x1="29" y1="54" x2="29" y2="22" stroke="#f65858" stroke-width="1"/><rect x="26.5" y="36" width="5" height="18" fill="#f65858" rx="0.5"/>
+          <line x1="39" y1="70" x2="39" y2="32" stroke="#2f9d5b" stroke-width="1"/><rect x="36.5" y="44" width="5" height="20" fill="#2f9d5b" rx="0.5"/>
+          <line x1="49" y1="78" x2="49" y2="38" stroke="#f65858" stroke-width="1"/><rect x="46.5" y="50" width="5" height="26" fill="#f65858" rx="0.5"/>
+          <line x1="59" y1="62" x2="59" y2="26" stroke="#2f9d5b" stroke-width="1"/><rect x="56.5" y="38" width="5" height="20" fill="#2f9d5b" rx="0.5"/>
+          <line x1="69" y1="60" x2="69" y2="24" stroke="#f65858" stroke-width="1"/><rect x="66.5" y="35" width="5" height="22" fill="#f65858" rx="0.5"/>
+          <line x1="79" y1="66" x2="79" y2="34" stroke="#2f9d5b" stroke-width="1"/><rect x="76.5" y="44" width="5" height="18" fill="#2f9d5b" rx="0.5"/>
+          <line x1="89" y1="50" x2="89" y2="16" stroke="#2f9d5b" stroke-width="1"/><rect x="86.5" y="26" width="5" height="18" fill="#2f9d5b" rx="0.5"/>
+          <line x1="99" y1="55" x2="99" y2="20" stroke="#f65858" stroke-width="1"/><rect x="96.5" y="30" width="5" height="22" fill="#f65858" rx="0.5"/>
+          <line x1="109" y1="46" x2="109" y2="12" stroke="#2f9d5b" stroke-width="1"/><rect x="106.5" y="22" width="5" height="18" fill="#2f9d5b" rx="0.5"/>
+          <line x1="119" y1="50" x2="119" y2="16" stroke="#2f9d5b" stroke-width="1"/><rect x="116.5" y="25" width="5" height="20" fill="#2f9d5b" rx="0.5"/>
+          <line x1="129" y1="42" x2="129" y2="9" stroke="#2f9d5b" stroke-width="1"/><rect x="126.5" y="18" width="5" height="18" fill="#2f9d5b" rx="0.5"/>
+          <line x1="139" y1="38" x2="139" y2="6" stroke="#f65858" stroke-width="1"/><rect x="136.5" y="14" width="5" height="20" fill="#f65858" rx="0.5"/>
+          <line x1="149" y1="32" x2="149" y2="3" stroke="#2f9d5b" stroke-width="1"/><rect x="146.5" y="10" width="5" height="16" fill="#2f9d5b" rx="0.5"/>
+          <line x1="159" y1="36" x2="159" y2="5" stroke="#2f9d5b" stroke-width="1"/><rect x="156.5" y="12" width="5" height="18" fill="#2f9d5b" rx="0.5"/>
+          <line x1="169" y1="34" x2="169" y2="4" stroke="#f65858" stroke-width="1"/><rect x="166.5" y="11" width="5" height="18" fill="#f65858" rx="0.5"/>
+          <line x1="179" y1="30" x2="179" y2="2" stroke="#2f9d5b" stroke-width="1"/><rect x="176.5" y="8" width="5" height="14" fill="#2f9d5b" rx="0.5"/>
+          <line x1="189" y1="28" x2="189" y2="1" stroke="#2f9d5b" stroke-width="1"/><rect x="186.5" y="6" width="5" height="16" fill="#2f9d5b" rx="0.5"/>
+          <line x1="199" y1="31" x2="199" y2="3" stroke="#2f9d5b" stroke-width="1"/><rect x="196.5" y="8" width="5" height="18" fill="#2f9d5b" rx="0.5"/>
+          <line x1="209" y1="29" x2="209" y2="2" stroke="#2f9d5b" stroke-width="1"/><rect x="206.5" y="7" width="5" height="16" fill="#2f9d5b" rx="0.5"/>
+          <!-- Time axis -->
+          <line x1="0" y1="142" x2="248" y2="142" stroke="#e3e8ea" stroke-width="0.5"/>
+          <text x="2" y="153" font-size="7.5" fill="#445b70" font-family="Lato">12:00</text>
+          <text x="52" y="153" font-size="7.5" fill="#445b70" font-family="Lato">16:00</text>
+          <text x="102" y="153" font-size="7.5" fill="#445b70" font-family="Lato">20:00</text>
+          <text x="150" y="153" font-size="7.5" fill="#171f2c" font-weight="bold" font-family="Lato">4 Feb</text>
+          <text x="198" y="153" font-size="7.5" fill="#445b70" font-family="Lato">04:00</text>
+        </svg>
+      </div>
+
+      <div class="indicators-row">
+        <div class="ind-group">
+          <div class="ind-pill">MA</div>
+          <div class="ind-pill">EMA</div>
+          <div class="ind-pill">BOLL</div>
+        </div>
+        <div style="width:1px;height:20px;background:var(--border-2);flex-shrink:0"></div>
+        <div class="ind-group">
+          <div class="ind-pill on">VOL</div>
+          <div class="ind-pill">RSI</div>
+          <div class="ind-pill">MACD</div>
+          <div class="ind-pill">KDJ</div>
+        </div>
+        <div class="ind-settings">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab strip -->
+    <div class="tab-strip" id="tabStrip">
+      <div class="tab-item on" onclick="goTab('ringkasan',0)">
+        <div class="tab-lbl">Ringkasan</div><div class="tab-bar"></div>
+      </div>
+      <div class="tab-item" onclick="goTab('teknikal',1)">
+        <div class="tab-lbl">Teknikal</div><div class="tab-bar"></div>
+      </div>
+      <div class="tab-item" onclick="goTab('sentimen',2)">
+        <div class="tab-lbl">Sentimen</div><div class="tab-bar"></div>
+      </div>
+      <div class="tab-item" onclick="goTab('berita',3)">
+        <div class="tab-lbl">Berita</div><div class="tab-bar"></div>
+      </div>
+      <div class="tab-item" onclick="goTab('feed',4)">
+        <div class="tab-lbl">Feed</div><div class="tab-bar"></div>
+      </div>
+      <div class="tab-item" onclick="goTab('token-info',5)">
+        <div class="tab-lbl">Token Info</div><div class="tab-bar"></div>
+      </div>
+    </div>
+
+    <!-- ═══ RINGKASAN ═══ -->
+    <div class="tab-pane on" id="pane-ringkasan">
+
+      <div class="sec-head">Portofolio Kamu</div>
+      <div class="card card-r8" style="margin-bottom:8px">
+        <div class="port-grid">
+          <div class="port-cell"><span class="meta-l">Nilai Portofolio</span><span class="meta-v">Rp100.000.000</span></div>
+          <div class="port-cell r"><span class="meta-l">Total</span><span class="meta-v">100 ETH</span></div>
+          <div class="port-cell"><span class="meta-l">Return</span><span class="meta-v meta-g">+Rp200.000 (+2,56%)</span></div>
+          <div class="port-cell r"><span class="meta-l">Harga Avg.</span><span class="meta-v">Rp40.000</span></div>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="act-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>Terima
+        </button>
+        <button class="act-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Earn
+        </button>
+        <button class="act-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>DCA
+        </button>
+      </div>
+
+      <!-- Order Book teaser -->
+      <div class="teaser-hd">
+        <div class="sec-head">Order Book</div>
+        <button class="lnk-btn">Lihat semua →</button>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="ob-ratio">
+          <span class="ob-lbl-g">Beli 24%</span>
+          <div class="ob-bar"><div class="ob-buy" style="width:24%"></div><div class="ob-sell"></div></div>
+          <span class="ob-lbl-r">86% Jual</span>
+        </div>
+        <table class="ob-table">
+          <thead>
+            <tr><th style="text-align:left">Qty</th><th style="text-align:right">Bid</th><th style="width:6px"></th><th style="text-align:left">Ask</th><th style="text-align:right">Qty</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="td-qty">0,0034456</td><td class="td-b">678.134.787</td><td></td><td class="td-a">678.234.787</td><td class="td-aq">3,101</td></tr>
+            <tr><td class="td-qty">0,014456</td><td class="td-b">678.131.787</td><td></td><td class="td-a">678.334.900</td><td class="td-aq">1,099</td></tr>
+            <tr><td class="td-qty">1,013445</td><td class="td-b">678.101.100</td><td></td><td class="td-a">678.800.900</td><td class="td-aq">3,500</td></tr>
+          </tbody>
+        </table>
+        <button class="see-more" onclick="goTab('ringkasan',0)">
+          Lihat Order Book lengkap <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+
+      <!-- Teknikal teaser -->
+      <div class="teaser-hd">
+        <div class="sec-head">Teknikal</div>
+        <button class="lnk-btn" onclick="goTab('teknikal',1)">Lihat →</button>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="analysis-summary">
+          <span class="sig-badge sig-buy">Beli Kuat</span>
+          <div>
+            <div style="font-size:12px;color:var(--text-3)">Kesimpulan Analisis</div>
+            <div style="font-size:10px;color:var(--text-3);margin-top:2px">11 Beli · 4 Netral · 2 Jual</div>
+          </div>
+        </div>
+        <div class="ind-chips">
+          <div class="ind-chip">
+            <span class="ic-name">RSI (14)</span>
+            <span class="ic-val">62.4</span>
+            <span class="ic-sig sig-buy">Beli</span>
+          </div>
+          <div class="ind-chip">
+            <span class="ic-name">MACD (12,26)</span>
+            <span class="ic-val">+482</span>
+            <span class="ic-sig sig-buy">Beli</span>
+          </div>
+          <div class="ind-chip">
+            <span class="ic-name">MA (20)</span>
+            <span class="ic-val">29.8M</span>
+            <span class="ic-sig sig-neu">Netral</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sentimen teaser -->
+      <div class="teaser-hd">
+        <div class="sec-head">Sentimen</div>
+        <button class="lnk-btn" onclick="goTab('sentimen',2)">Lihat →</button>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="sent-row">
+          <div class="sent-circle">
+            <span class="sent-num">72</span>
+            <span class="sent-lbl">Bullish</span>
+          </div>
+          <div class="sent-detail">
+            <div class="sent-line"><span class="sent-line-l">Social Rank</span><span class="rank-badge">#4</span></div>
+            <div class="sent-line"><span class="sent-line-l">Volume 24h</span><span class="sent-line-v">48.2K</span></div>
+            <div class="sent-line"><span class="sent-line-l">Interaksi 24h</span><span class="sent-line-v">1.2M</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Berita teaser -->
+      <div class="teaser-hd">
+        <div class="sec-head">Berita Terkini</div>
+        <button class="lnk-btn" onclick="goTab('berita',3)">Lihat semua →</button>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="news-item" style="padding:0;border:none">
+          <div class="news-thumb" style="background:#e1f2fa">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          </div>
+          <div>
+            <div class="news-hl">Ethereum Layer 2 Transactions Hit Record High Amid Network Upgrade</div>
+            <div class="news-meta">CoinDesk · 2 jam lalu</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feed teaser -->
+      <div class="teaser-hd">
+        <div class="sec-head">Post Terbaru</div>
+        <button class="lnk-btn" onclick="goTab('feed',4)">Lihat semua →</button>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="feed-post" style="padding:0;border:none">
+          <div class="feed-user">
+            <div class="feed-av">AR</div>
+            <span class="feed-name">@andhika_r</span>
+            <span class="feed-time">45m</span>
+          </div>
+          <div class="feed-text">ETH breakout dari resistance 30 juta. RSI belum overbought, next target 32–33 juta.</div>
+          <div class="feed-tags"><span class="feed-tag">#ETH</span><span class="feed-tag">#Teknikal</span></div>
+        </div>
+      </div>
+
+      <!-- Token Info teaser -->
+      <div class="teaser-hd">
+        <div class="sec-head">Token Info</div>
+        <button class="lnk-btn" onclick="goTab('token-info',5)">Lihat →</button>
+      </div>
+      <div class="card" style="margin-bottom:8px">
+        <div style="font-size:10px;color:var(--text-3);margin-bottom:5px">Unlock Berikutnya</div>
+        <div class="row-space" style="margin-bottom:2px">
+          <span style="font-size:12px;font-weight:700;color:var(--text-1)">Ethereum Foundation</span>
+          <span style="font-size:10px;color:var(--text-3)">15 Feb 2025</span>
+        </div>
+        <div style="font-size:17px;font-weight:700;color:var(--blue);margin-bottom:5px">800.000 ETH <span style="font-size:10px;color:var(--text-3);font-weight:400">(0.67% supply)</span></div>
+        <div class="prog-bar"><div class="prog-fill" style="width:34%"></div></div>
+        <div class="row-space">
+          <span style="font-size:10px;color:var(--text-3)">Terungkap 34%</span>
+          <span style="font-size:10px;color:var(--text-3)">27 hari lagi</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TEKNIKAL ═══ -->
+    <div class="tab-pane" id="pane-teknikal">
+      <div class="analysis-block">
+        <div class="analysis-label">Kesimpulan Analisis Indikator Teknikal</div>
+        <div class="big-badge sig-buy">Beli Kuat</div>
+        <div class="analysis-sub">11 Indikator Beli · 4 Netral · 2 Jual</div>
+      </div>
+
+      <div class="sec-head">Indikator Oscillator</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="ind-full-row"><span class="ind-full-name">RSI (14)</span><div class="ind-full-right"><span class="ind-full-val">62.4</span><span class="ind-sig sig-buy">Beli</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">MACD (12, 26)</span><div class="ind-full-right"><span class="ind-full-val">+482</span><span class="ind-sig sig-buy">Beli</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">Stochastic (14, 3, 3)</span><div class="ind-full-right"><span class="ind-full-val">78.2</span><span class="ind-sig sig-neu">Netral</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">CCI (20)</span><div class="ind-full-right"><span class="ind-full-val">+124.6</span><span class="ind-sig sig-buy">Beli</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">ADX (14)</span><div class="ind-full-right"><span class="ind-full-val">28.1</span><span class="ind-sig sig-neu">Netral</span></div></div>
+      </div>
+
+      <div class="sec-head">Indikator Moving Average</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="ind-full-row"><span class="ind-full-name">MA (10)</span><div class="ind-full-right"><span class="ind-full-val">29.480.000</span><span class="ind-sig sig-buy">Beli</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">MA (20)</span><div class="ind-full-right"><span class="ind-full-val">29.870.000</span><span class="ind-sig sig-neu">Netral</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">EMA (10)</span><div class="ind-full-right"><span class="ind-full-val">29.620.000</span><span class="ind-sig sig-buy">Beli</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">EMA (20)</span><div class="ind-full-right"><span class="ind-full-val">29.750.000</span><span class="ind-sig sig-buy">Beli</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">BOLL Upper (20)</span><div class="ind-full-right"><span class="ind-full-val">31.240.000</span><span class="ind-sig sig-sell">Jual</span></div></div>
+        <div class="ind-full-row"><span class="ind-full-name">BOLL Lower (20)</span><div class="ind-full-right"><span class="ind-full-val">28.500.000</span><span class="ind-sig sig-buy">Beli</span></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ SENTIMEN ═══ -->
+    <div class="tab-pane" id="pane-sentimen">
+      <div class="sent-score-big">
+        <svg width="96" height="96" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#e3e8ea" stroke-width="10"/>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#2f9d5b" stroke-width="10"
+            stroke-dasharray="171 239" stroke-dashoffset="60"
+            stroke-linecap="round" transform="rotate(-90 50 50)"/>
+          <text x="50" y="46" text-anchor="middle" font-size="20" font-weight="700" fill="#2f9d5b" font-family="Lato">72</text>
+          <text x="50" y="60" text-anchor="middle" font-size="9" fill="#445b70" font-family="Lato">Bullish</text>
+        </svg>
+        <div class="sent-sub">Skor Sentimen · Diperbarui 1 jam lalu</div>
+      </div>
+
+      <div class="sec-head">Social Rank</div>
+      <div class="social-rank-row">
+        <div class="rank-card">
+          <div class="rank-card-l">Rank Keseluruhan</div>
+          <div class="rank-card-v">#4</div>
+          <div class="rank-card-sub">dari 500+ aset</div>
+        </div>
+        <div class="rank-card">
+          <div class="rank-card-l">Rank Sektor</div>
+          <div class="rank-card-v">#2</div>
+          <div class="rank-card-sub">Layer 1 · 32 aset</div>
+        </div>
+      </div>
+
+      <div class="sec-head">Volume & Interaksi Sosial</div>
+      <div class="social-stat"><span class="social-stat-l">Social Volume 24h</span><span class="social-stat-v">48.231</span></div>
+      <div class="social-stat"><span class="social-stat-l">Social Interactions 24h</span><span class="social-stat-v">1.248.930</span></div>
+      <div class="social-stat"><span class="social-stat-l">Dominance</span><span class="social-stat-v">6.4%</span></div>
+      <div class="social-stat" style="margin-bottom:0"><span class="social-stat-l">Sentiment 7D Trend</span><span class="social-stat-v meta-g">↑ Meningkat</span></div>
+    </div>
+
+    <!-- ═══ BERITA ═══ -->
+    <div class="tab-pane" id="pane-berita">
+      <div class="news-item">
+        <div class="news-thumb" style="background:#e1f2fa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+        <div><div class="news-hl">Ethereum Layer 2 Transactions Hit Record High Amid Network Upgrade</div><div class="news-meta">CoinDesk · 2 jam lalu</div></div>
+      </div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:#e6f7ee"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f9d5b" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+        <div><div class="news-hl">Vitalik Buterin Luncurkan Roadmap Ethereum 2025: Fokus pada Skalabilitas dan Privasi</div><div class="news-meta">Cointelegraph · 4 jam lalu</div></div>
+      </div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:#fff3cd"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+        <div><div class="news-hl">SEC Kembali Tunda Keputusan ETH Spot ETF — Pasar Masih Menunggu</div><div class="news-meta">Decrypt · 6 jam lalu</div></div>
+      </div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:#f4f6f6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#445b70" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div><div class="news-hl">DeFi di Ethereum Catat TVL $52 Miliar, Uniswap Pimpin Volume</div><div class="news-meta">The Block · 8 jam lalu</div></div>
+      </div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:#e1f2fa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div><div class="news-hl">Laporan Q4: Staking Ethereum Naik 18%, Validator Aktif Tembus 1 Juta</div><div class="news-meta">BeInCrypto · 12 jam lalu</div></div>
+      </div>
+    </div>
+
+    <!-- ═══ FEED ═══ -->
+    <div class="tab-pane" id="pane-feed">
+      <div class="feed-post">
+        <div class="feed-user"><div class="feed-av">AR</div><span class="feed-name">@andhika_r</span><span class="feed-time">45m</span></div>
+        <div class="feed-text">ETH breakout dari resistance 30 juta, kalau hold di atas sini next target 32–33 juta. RSI belum overbought jadi masih ada ruang.</div>
+        <div class="feed-tags"><span class="feed-tag">#ETH</span><span class="feed-tag">#Teknikal</span></div>
+      </div>
+      <div class="feed-post">
+        <div class="feed-user"><div class="feed-av" style="background:#fff3cd;color:#d97706">BS</div><span class="feed-name">@budi_s</span><span class="feed-time">1j</span></div>
+        <div class="feed-text">Buat yang masih ragu hold ETH, lihat chart weekly. Higher high, higher low. Trend bullish masih intact selama support 28 juta ga jebol.</div>
+        <div class="feed-tags"><span class="feed-tag">#ETH</span><span class="feed-tag">#Analisis</span></div>
+      </div>
+      <div class="feed-post">
+        <div class="feed-user"><div class="feed-av" style="background:#e6f7ee;color:#2f9d5b">CR</div><span class="feed-name">@crypto_rina</span><span class="feed-time">2j</span></div>
+        <div class="feed-text">Gas fee lagi murah banget nih, good time buat yang mau DCA atau gerak ke DeFi. Manfaatin sebelum aktivitas naik lagi.</div>
+        <div class="feed-tags"><span class="feed-tag">#ETH</span><span class="feed-tag">#DeFi</span></div>
+      </div>
+      <div class="feed-post">
+        <div class="feed-user"><div class="feed-av" style="background:#fde8e8;color:#f65858">DP</div><span class="feed-name">@dimas_p</span><span class="feed-time">3j</span></div>
+        <div class="feed-text">Hati-hati, ada resistance kuat di 30.5 juta. Kalau ga tembus dengan volume tinggi, bisa retest lagi ke 28–29 juta.</div>
+        <div class="feed-tags"><span class="feed-tag">#ETH</span><span class="feed-tag">#Warning</span></div>
+      </div>
+    </div>
+
+    <!-- ═══ TOKEN INFO ═══ -->
+    <div class="tab-pane" id="pane-token-info">
+      <div class="seg-ctrl">
+        <button class="seg-btn on" id="seg-infokoin" onclick="goSeg('infokoin')">Info Koin</button>
+        <button class="seg-btn" id="seg-tokenomics" onclick="goSeg('tokenomics')">Tokenomics</button>
+      </div>
+
+      <!-- Info Koin -->
+      <div id="sub-infokoin">
+        <div class="sec-head">Detail Token</div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="token-row"><span class="token-row-l">Max Supply</span><span class="token-row-v">Tidak Terbatas</span></div>
+          <div class="token-row"><span class="token-row-l">Circulating Supply</span><span class="token-row-v">120.280.093 ETH</span></div>
+          <div class="token-row"><span class="token-row-l">Listing Date</span><span class="token-row-v">30 Jul 2015</span></div>
+          <div class="token-row"><span class="token-row-l">Market Cap</span><span class="token-row-v">Rp3.621 T</span></div>
+          <div class="token-row"><span class="token-row-l">Volume 24h</span><span class="token-row-v">Rp241.4 T</span></div>
+        </div>
+        <div class="sec-head">Deskripsi</div>
+        <div class="card" style="margin-bottom:12px">
+          <p class="desc-text">Ethereum adalah platform blockchain terdesentralisasi yang memungkinkan pengembang membangun smart contract dan dApps. Ethereum juga merupakan fondasi ekosistem DeFi dan NFT terbesar saat ini.</p>
+        </div>
+        <div class="sec-head">Komunitas</div>
+        <div class="card">
+          <div class="comm-links">
+            <div class="comm-lnk"><svg width="13" height="13" viewBox="0 0 24 24" fill="#3a83f9"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>Website</div>
+            <div class="comm-lnk"><svg width="13" height="13" viewBox="0 0 24 24" fill="#3a83f9"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>Twitter</div>
+            <div class="comm-lnk"><svg width="13" height="13" viewBox="0 0 24 24" fill="#3a83f9"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z"/></svg>Discord</div>
+            <div class="comm-lnk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3a83f9" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Whitepaper</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tokenomics -->
+      <div id="sub-tokenomics" style="display:none">
+        <div class="sec-head">Token Allocation</div>
+        <div class="card" style="margin-bottom:12px">
+          <svg viewBox="0 0 180 180" width="140" height="140" style="display:block;margin:0 auto 4px">
+            <circle cx="90" cy="90" r="62" fill="none" stroke="#3a83f9" stroke-width="24"
+              stroke-dasharray="195 194" stroke-dashoffset="0" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="62" fill="none" stroke="#2f9d5b" stroke-width="24"
+              stroke-dasharray="111 278" stroke-dashoffset="-195" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="62" fill="none" stroke="#f65858" stroke-width="24"
+              stroke-dasharray="66 323" stroke-dashoffset="-306" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="62" fill="none" stroke="#f59e0b" stroke-width="24"
+              stroke-dasharray="23 366" stroke-dashoffset="-372" transform="rotate(-90 90 90)"/>
+            <text x="90" y="86" text-anchor="middle" font-size="13" font-weight="700" fill="#06090d" font-family="Lato">120.28M</text>
+            <text x="90" y="100" text-anchor="middle" font-size="9" fill="#445b70" font-family="Lato">Total Supply</text>
+          </svg>
+          <div class="alloc-legend">
+            <div class="alloc-item"><div class="alloc-dot" style="background:#3a83f9"></div><span class="alloc-name">Presale</span><span class="alloc-pct">50%</span></div>
+            <div class="alloc-item"><div class="alloc-dot" style="background:#2f9d5b"></div><span class="alloc-name">Ethereum Foundation</span><span class="alloc-pct">29%</span></div>
+            <div class="alloc-item"><div class="alloc-dot" style="background:#f65858"></div><span class="alloc-name">Early Backers</span><span class="alloc-pct">17%</span></div>
+            <div class="alloc-item"><div class="alloc-dot" style="background:#f59e0b"></div><span class="alloc-name">Lainnya</span><span class="alloc-pct">4%</span></div>
+          </div>
+        </div>
+
+        <div class="sec-head">Unlock Events</div>
+        <div class="unlock-card">
+          <div class="unlock-header">
+            <span class="unlock-name">Ethereum Foundation</span>
+            <span class="unlock-date">15 Feb 2025 · 27 hari lagi</span>
+          </div>
+          <div class="unlock-amount">800.000 ETH <span class="unlock-pct">(0.67% supply)</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:34%"></div></div>
+          <div class="row-space"><span style="font-size:10px;color:var(--text-3)">Terungkap 34%</span><span style="font-size:10px;color:var(--text-3)">≈ Rp24.1 T</span></div>
+        </div>
+        <div class="unlock-card">
+          <div class="unlock-header">
+            <span class="unlock-name">Early Backers Tranche 3</span>
+            <span class="unlock-date">1 Mar 2025 · 41 hari lagi</span>
+          </div>
+          <div class="unlock-amount" style="color:#f59e0b">1.200.000 ETH <span class="unlock-pct">(1.0% supply)</span></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:60%;background:#f59e0b"></div></div>
+          <div class="row-space"><span style="font-size:10px;color:var(--text-3)">Terungkap 60%</span><span style="font-size:10px;color:var(--text-3)">≈ Rp36.2 T</span></div>
+        </div>
+
+        <div class="sec-head" style="margin-top:4px">Jadwal Unlock</div>
+        <div class="card">
+          <div class="token-row"><span class="token-row-l">Q1 2025</span><span class="token-row-v">2.000.000 ETH</span></div>
+          <div class="token-row"><span class="token-row-l">Q2 2025</span><span class="token-row-v">1.500.000 ETH</span></div>
+          <div class="token-row"><span class="token-row-l">Q3 2025</span><span class="token-row-v">800.000 ETH</span></div>
+          <div class="token-row"><span class="token-row-l">Q4 2025</span><span class="token-row-v">500.000 ETH</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottom-bar">
+    <div class="bot-icons">
+      <div class="bot-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#445b70" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="bot-icon-l">Alert</span>
+      </div>
+      <div class="bot-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#445b70" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        <span class="bot-icon-l">Futures</span>
+      </div>
+    </div>
+    <div class="bot-main">
+      <button class="btn-jual">Jual</button>
+      <button class="btn-beli">Beli</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const TABS = ['ringkasan','teknikal','sentimen','berita','feed','token-info'];
+
+  function goTab(name, idx) {
+    TABS.forEach((t, i) => {
+      document.querySelectorAll('.tab-item')[i].classList.toggle('on', i === idx);
+      document.getElementById('pane-' + t).classList.toggle('on', t === name);
+    });
+    // Scroll so tab strip sticks at top
+    const strip = document.getElementById('tabStrip');
+    const scroll = document.getElementById('scrollArea');
+    const stripTop = strip.offsetTop;
+    scroll.scrollTo({ top: stripTop, behavior: 'smooth' });
+  }
+
+  function goSeg(name) {
+    ['infokoin','tokenomics'].forEach(s => {
+      document.getElementById('seg-' + s).classList.toggle('on', s === name);
+      document.getElementById('sub-' + s).style.display = s === name ? 'block' : 'none';
+    });
+  }
+</script>
+</body>
+</html>
